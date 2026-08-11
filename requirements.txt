@@ -7,5 +7,6 @@ pandas
 numpy
 pydantic
 jinja2
+starlette<0.36.0
 huggingface_hub<0.25.0
 gradio>=4.40.0,<5.0.0
