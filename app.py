@@ -64,7 +64,7 @@ api_app = FastAPI(
     docs_url="/docs"
 )
 
-# 啟動時即自動初始化與載入模型狀態，避免前端發送請求時出現 KeyError
+# 啟動時即自動初始化與載入模型狀態
 load_model_state()
 
 # --- Pydantic 預測模型 ---
@@ -183,12 +183,27 @@ def gradio_train_wrapper(test_size, random_state, model_type, alpha):
     try:
         config = TrainConfig(test_size=test_size, random_state=random_state, model_type=model_type, alpha=alpha)
         res = train_endpoint(config)
-        coef_str = "\n".join([f"- {k}: {v:.4f}" for k, v in res.feature_coefs.items()])
+        
+        # 相容字典 (dict) 與 Pydantic 物件格式
+        if isinstance(res, dict):
+            status = res.get("status", "成功")
+            r2 = res.get("r2", 0.0)
+            intercept = res.get("intercept", 0.0)
+            train_time = res.get("train_time", 0.0)
+            feature_coefs = res.get("feature_coefs", {})
+        else:
+            status = res.status
+            r2 = res.r2
+            intercept = res.intercept
+            train_time = res.train_time
+            feature_coefs = res.feature_coefs
+
+        coef_str = "\n".join([f"- {k}: {v:.4f}" for k, v in feature_coefs.items()])
         info = (
-            f"**訓練結果狀態**: {res.status}\n"
-            f"**決定係數 R² Score**: `{res.r2:.4f}`\n"
-            f"**截距 (Intercept)**: `{res.intercept:.4f}`\n"
-            f"**訓練耗時**: `{res.train_time:.4f}` 秒\n\n"
+            f"**訓練結果狀態**: {status}\n"
+            f"**決定係數 R² Score**: `{r2:.4f}`\n"
+            f"**截距 (Intercept)**: `{intercept:.4f}`\n"
+            f"**訓練耗時**: `{train_time:.4f}` 秒\n\n"
             f"**特徵權重 (Feature Coefficients)**:\n{coef_str}"
         )
         return info
@@ -246,7 +261,7 @@ with gr.Blocks(title="💼 薪資預測多元線性迴歸平台") as demo:
 # 4. 融合 Gradio 與自訂 API 路由
 # ==========================================
 
-# 1. 啟用 Gradio 佇列以自動初始化 config 設定
+# 1. 啟用 Gradio 佇列
 demo.queue()
 
 # 2. 將 FastAPI 實例指定給 app
