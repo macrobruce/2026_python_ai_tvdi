@@ -4,5 +4,7 @@ gunicorn
 joblib
 scikit-learn
 pandas
+numpy
 pydantic
-gradio
+jinja2
+gradio>=4.40.0,<5.0.0

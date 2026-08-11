@@ -60,7 +60,8 @@ def load_model_state():
 api_app = FastAPI(
     title="薪資預測多元線性迴歸 API",
     description="這是一個結合 FastAPI 與 Gradio 的機器學習部署服務。提供薪資預測端點與線上模型訓練端點。",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs"
 )
 
 # 啟動時即自動初始化與載入模型狀態，避免前端發送請求時出現 KeyError
@@ -245,11 +246,14 @@ with gr.Blocks(title="💼 薪資預測多元線性迴歸平台") as demo:
 # 4. 融合 Gradio 與自訂 API 路由
 # ==========================================
 
-# 1. 產生 Gradio 的 FastAPI 應用實例
-app = gr.routes.App.create_app(demo, app_kwargs={"docs_url": "/docs"})
+# 1. 啟用 Gradio 佇列以自動初始化 config 設定
+demo.queue()
 
-# 2. 合併 API 路由：將 api_app 中的所有自訂 API 路由 (/predict, /train) 併入
-app.include_router(api_app.router)
+# 2. 將 FastAPI 實例指定給 app
+app = api_app
+
+# 3. 將 Gradio UI 安全掛載至主應用的根目錄
+app = gr.mount_gradio_app(app, demo, path="/")
 
 if __name__ == "__main__":
     import uvicorn
